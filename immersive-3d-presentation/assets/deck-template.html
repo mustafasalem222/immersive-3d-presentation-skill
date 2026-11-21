@@ -1,0 +1,937 @@
+<!doctype html>
+<!--
+  IMMERSIVE DECK TEMPLATE
+  1. Set <html lang dir data-motif> from scripts/detect_direction.py + the chosen archetype.
+  2. Replace the demo <section class="slide"> blocks. Keep the engine (<script> blocks) as is.
+  3. Delete motif builders you do not use (search "MOTIFS") and unused token blocks (search "ARCHETYPE TOKENS").
+  The deck works without WebGL and without GSAP (jump cuts): 3D is an enhancement, never a dependency.
+-->
+<html lang="en" dir="ltr" data-motif="ideas" data-digits="latn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deck title</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- LTR pair. For Arabic swap to: Amiri (display, calligraphic) / Cairo or IBM Plex Sans Arabic (body) -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Inter:wght@400;600&family=Amiri:wght@400;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ===== ARCHETYPE TOKENS: keep only the block you use ===== */
+:root{ /* default = ideas (illustrated philosophy) */
+  --bg:#0e2a5c; --surface:#16408a; --ink:#f6f3ea; --muted:#b9c8e8;
+  --accent:#ffd166;  /* = emphasis / the thing to remember */
+  --accent2:#7fd6ff; /* = secondary concept */
+  --font-display:"Cormorant Garamond","Amiri",Georgia,serif;
+  --font-body:"Inter","Cairo",system-ui,sans-serif;
+}
+html[data-motif="frames"]{ --bg:#0b1b3a; --surface:#12285a; --ink:#f4efe3; --muted:#b7b9c4; --accent:#d4af37; --accent2:#e8d08a; }
+html[data-motif="network"]{ --bg:#07131f; --surface:#0f2336; --ink:#e8f1f8; --muted:#9db3c7; --accent:#4cc9f0; --accent2:#b8f2e6; --font-display:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif; }
+html[data-motif="chiaroscuro"]{ --bg:#0a0806; --surface:#1a1510; --ink:#f2e8d0; --muted:#a89b80; --accent:#f2b705; --accent2:#c0762b; }
+html[data-motif="papyrus"]{ --bg:#f4ebd9; --surface:#fbf6ec; --ink:#482400; --muted:#75583a; --accent:#6b2d1b; --accent2:#c1ad8f; --font-display:"Amiri","Cormorant Garamond",Georgia,serif; --font-body:"Cairo","Inter",sans-serif; }
+html[data-motif="editorial"]{ --bg:#fcfcfd; --surface:#ffffff; --ink:#14171f; --muted:#5c6473; --accent:#2eb89b; --accent2:#9b82e6; }
+html[data-motif="muted-morph"]{ --bg:#efefef; --surface:#ffffff; --ink:#000000; --muted:#5f5970; --accent:#5d447b; --accent2:#c8bfd6; --font-display:"Cairo","Inter",sans-serif; --font-body:"Cairo","Inter",sans-serif; }
+html[lang^="ar"],html[lang="fa"],html[lang="ur"]{ --font-display:"Amiri","Cormorant Garamond",serif; --font-body:"Cairo","Inter",sans-serif; }
+html:is([lang^="ar"],[lang="fa"],[lang="ur"],[lang="he"]) *{ letter-spacing:0 !important; } /* never track Arabic/Hebrew script */
+/* Arabic-script glyphs read small and carry marks above/below: taller lines, ~10% larger body */
+html:is([lang^="ar"],[lang="fa"],[lang="ur"]) h1,html:is([lang^="ar"],[lang="fa"],[lang="ur"]) h2{ line-height:1.35 }
+html:is([lang^="ar"],[lang="fa"],[lang="ur"]) p,html:is([lang^="ar"],[lang="fa"],[lang="ur"]) li{ line-height:1.75; font-size:33px }
+html:is([lang^="ar"],[lang="fa"],[lang="ur"]) .kicker{ text-transform:none }
+
+:root{--dir:1} [dir=rtl]{--dir:-1}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--font-body);overflow:hidden}
+#gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+body.no-gl{background:radial-gradient(120% 90% at 70% 20%,var(--surface),var(--bg))}
+body.no-gl #gl{display:none}
+
+/* stage: fixed 16:9 canvas of 1600x900, scaled to fit */
+#stage{position:fixed;left:50%;top:50%;width:1600px;height:900px;z-index:1;
+  transform:translate(-50%,-50%) scale(var(--s,1));transform-origin:center}
+.slide{position:absolute;inset:0;display:none;padding:96px 120px;text-align:start;
+  flex-direction:column;justify-content:center;gap:28px}
+.slide.active{display:flex}
+.slide .notes{display:none}
+h1,h2{font-family:var(--font-display);line-height:1.08;font-weight:700}
+h1{font-size:96px} h2{font-size:64px}
+p,li{font-size:30px;line-height:1.5;color:var(--ink);max-width:880px}
+.muted{color:var(--muted)} .em{color:var(--accent)} .em2{color:var(--accent2)}
+.kicker{font-size:22px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.src{font-size:20px;color:var(--muted)}
+.big{font-family:var(--font-display);font-size:240px;line-height:1;color:var(--accent);font-variant-numeric:lining-nums}
+.rule{width:120px;height:3px;background:var(--accent);transform-origin:left}
+[dir=rtl] .rule{transform-origin:right}
+/* keep the text column on the inline-start side; the 3D object lives on the other side */
+.col{max-width:820px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;perspective:1200px;width:100%}
+.ladder{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;width:100%;max-width:820px}
+.step-item{padding:16px 24px;border-radius:14px;border:2px solid color-mix(in srgb,var(--ink) 18%,transparent);
+  font-size:28px;line-height:1.5;color:var(--muted);transition:border-color .35s,color .35s,background .35s}
+.step-item.is-active{border-color:var(--accent);color:var(--ink);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+
+/* ===== 3D UI (CSS): tilt + flip cards. Pure CSS/DOM so text stays crisp and RTL-safe ===== */
+.tilt{transform-style:preserve-3d;transition:transform .25s var(--ease,ease-out);will-change:transform}
+.flip{perspective:1000px;height:340px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;text-align:start}
+.flip-in{display:block;position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;
+  padding:32px;display:flex;flex-direction:column;justify-content:center;gap:14px;
+  background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);
+  box-shadow:0 30px 60px -30px #000a;transition:opacity .35s ease,visibility .35s ease}
+.face:not(.back){transform:rotateY(0deg) translateZ(1px);opacity:1;visibility:visible}
+.flip.on .face:not(.back){opacity:0;visibility:hidden;pointer-events:none}
+.face.back{transform:rotateY(180deg) translateZ(1px);background:color-mix(in srgb,var(--accent) 14%,var(--surface));opacity:0;visibility:hidden;pointer-events:none}
+.flip.on .face.back{opacity:1;visibility:visible;pointer-events:auto}
+.face h3{font-family:var(--font-display);font-size:40px}
+.face p{font-size:26px}
+.flip:focus-visible,#list button:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+
+/* ===== INTERACTIONS: quiz, live poll, timer, drag-the-3D-object hint ===== */
+.slide{user-select:none;-webkit-user-select:none}
+body.gl-on .slide{cursor:grab}
+.quiz,.poll{display:grid;gap:16px;width:100%}
+.opt,.pv{all:unset;box-sizing:border-box;cursor:pointer;position:relative;overflow:hidden;padding:20px 28px;font-size:30px;line-height:1.35;
+  border-radius:16px;border:2px solid color-mix(in srgb,var(--ink) 28%,transparent);
+  background:color-mix(in srgb,var(--surface) 70%,transparent);transition:transform .2s,border-color .2s,background .2s,opacity .2s}
+.opt:hover,.pv:hover{transform:translateX(calc(8px * var(--dir)));border-color:var(--accent)}
+.opt:focus-visible,.pv:focus-visible,.timer:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.quiz.done .opt{cursor:default;pointer-events:none;opacity:.5}
+.opt.right{opacity:1 !important;border-color:#5be3a0;background:color-mix(in srgb,#5be3a0 24%,var(--surface))}
+.opt.wrong{opacity:1 !important;border-color:#ff6b6b;background:color-mix(in srgb,#ff6b6b 24%,var(--surface))}
+.fb{min-height:44px;font-size:28px;color:var(--accent)}
+.pv{display:flex;justify-content:space-between;gap:16px}
+.pv .bar{position:absolute;inset-block:0;inset-inline-start:0;width:0;background:color-mix(in srgb,var(--accent) 32%,transparent);transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.pv>span:not(.bar){position:relative}
+.pv .n{font-variant-numeric:tabular-nums;color:var(--accent)}
+.timer{all:unset;cursor:pointer;direction:ltr;unicode-bidi:isolate;font-family:var(--font-display);font-size:96px;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums;align-self:flex-start}
+.timer.run{animation:pulse 1s ease-in-out infinite} .timer.end{color:#ff6b6b}
+@keyframes pulse{50%{opacity:.6}}
+
+
+/* ===== OVERLAYS (clean stage: no visible bottom HUD bar; keyboard-driven navigation) ===== */
+#bar{position:fixed;z-index:6;top:0;inset-inline:0;height:4px;background:var(--accent);transform:scaleX(0);transform-origin:left}
+[dir=rtl] #bar{transform-origin:right}
+#list,#notes{position:fixed;z-index:8;display:none;background:color-mix(in srgb,var(--bg) 94%,#000);color:var(--ink)}
+#list{inset:0;padding:48px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;align-content:start;overflow:auto}
+#list.open{display:grid}
+#list button{all:unset;cursor:pointer;padding:16px;border:1px solid color-mix(in srgb,var(--ink) 25%,transparent);border-radius:12px;font-size:18px}
+#list button[aria-current=true]{border-color:var(--accent)}
+#notes{inset-inline:0;bottom:64px;margin-inline:auto;max-width:900px;padding:20px 28px;border-radius:14px;font-size:20px}
+#notes.open{display:block}
+
+/* painterly grain for chiaroscuro & aged parchment grain for papyrus historical archetype */
+html[data-motif="chiaroscuro"] #stage::before,
+html[data-motif="papyrus"] #stage::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.12;mix-blend-mode:multiply;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+html[data-motif="papyrus"] #stage::after{content:"";position:absolute;inset:28px;pointer-events:none;border:1.5px solid color-mix(in srgb,var(--ink) 22%,transparent);border-radius:6px}
+html[data-motif="papyrus"] .face{border:2px solid var(--accent2);box-shadow:0 16px 32px -20px #48240044}
+html[data-motif="papyrus"] .step-item{border-color:color-mix(in srgb,var(--ink) 22%,transparent)}
+html[data-motif="papyrus"] .step-item.is-active{border-color:var(--accent);background:color-mix(in srgb,var(--accent2) 28%,var(--surface))}
+
+/* ===== HYBRID VISUAL CONTAINERS: Native SVG Infographics, Kroki Sketches & Framed Photos ===== */
+.split-visual{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;width:100%}
+.infographic-stage{position:relative;width:100%;background:var(--surface);border:2px solid color-mix(in srgb,var(--ink) 18%,transparent);
+  border-radius:20px;padding:28px;box-shadow:0 20px 44px -28px #0005}
+.infographic-stage svg{width:100%;height:auto;display:block;overflow:visible}
+.sketch-box{position:relative;width:100%;padding:20px;display:flex;align-items:center;justify-content:center}
+.sketch-box svg{width:100%;max-height:540px;height:auto;display:block;overflow:visible}
+.photo-frame{position:relative;width:100%;min-height:380px;border-radius:16px;overflow:hidden;
+  border:2px solid color-mix(in srgb,var(--ink) 25%,transparent);background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:18px;text-align:center}
+.photo-frame img{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block}
+.photo-frame.is-drop{cursor:pointer;border-style:dashed}
+.photo-frame .photo-cap{font-size:20px;color:var(--muted)}
+/* ===== CENTERED COVER SLIDE (Slide 1 — Mandatory Centerpiece Layout) ===== */
+.slide.cover-center{align-items:center;justify-content:center;text-align:center;padding:88px 160px}
+.cover-core{position:relative;z-index:2;max-width:860px;display:flex;flex-direction:column;align-items:center;gap:22px}
+.cover-core .rule{margin-inline:auto;transform-origin:center}
+.cover-motifs{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.cover-motifs svg{width:100%;height:100%;display:block}
+
+/* ===== ZERO-OVERFLOW HTML-NODE DIAGRAMS (Mind Maps, Bridges, Flowcharts) ===== */
+.diagram-wrap{position:relative;width:100%;min-height:460px;padding:24px;display:grid;place-items:center}
+.diagram-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.diag-node{position:relative;z-index:1;padding:16px 24px;border-radius:16px;background:var(--surface);
+  border:2px solid color-mix(in srgb,var(--accent) 55%,transparent);color:var(--ink);text-align:center;
+  font-size:24px;line-height:1.5;max-width:340px;height:auto;overflow-wrap:break-word;word-break:normal;
+  box-shadow:0 12px 28px -16px #0004}
+.diag-hub{border-radius:999px;padding:28px 34px;background:var(--accent);color:var(--bg);font-weight:700;font-size:28px}
+
+/* ===== HEXAGON MOSAIC IMAGE REVEAL (Staggered Center-Outward Zoom) ===== */
+.hex-mosaic{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;max-width:740px}
+.hex-tile{width:150px;height:166px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background-size:640px 440px;background-repeat:no-repeat;position:relative;will-change:transform,opacity}
+.hex-tile::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 22px rgba(0,0,0,.45);pointer-events:none}
+
+/* ===== EDITORIAL TYPOGRAPHY MASK & SUBJECT POP-OUT ===== */
+.type-mask-hero{font-family:var(--font-display);font-weight:900;font-size:150px;line-height:.9;
+  background-size:cover;background-position:center;-webkit-background-clip:text;background-clip:text;color:transparent;
+  position:relative;display:inline-block}
+
+#gl{transition:opacity .55s ease}
+body.gl-hidden #gl{opacity:0;pointer-events:none}
+
+@media (prefers-reduced-motion:reduce){ .tilt,.flip-in,.opt,.pv .bar{transition:none} .timer.run{animation:none} }
+</style>
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="bar" role="progressbar" aria-label="Progress"></div>
+
+<main id="stage">
+  <!-- 1. Centered Cover: title dead-center, framed by 2D motifs & slow-floating shadowed 3D surround -->
+  <section class="slide cover-center" data-title="Title" data-cam="0,0,9.5" data-hero="0,0,1" data-cover-surround="true">
+    <div class="cover-motifs" aria-hidden="true">
+      <svg viewBox="0 0 1600 900" fill="none">
+        <circle cx="800" cy="450" r="340" stroke="currentColor" stroke-opacity=".08" stroke-width="1.5" stroke-dasharray="6 10"/>
+        <path d="M96 96 H176 M96 96 V176 M1504 804 H1424 M1504 804 V724" stroke="var(--accent)" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="cover-core">
+      <div class="kicker step">Workshop</div>
+      <h1>A big idea, one slide at a time</h1>
+      <div class="rule step"></div>
+      <p class="muted step">Subtitle or opening theme — the story is about to begin</p>
+    </div>
+    <aside class="notes">Opening hook. The centered title and slow-floating 3D surround create anticipation before diving in.</aside>
+  </section>
+
+  <!-- 2. Contextual 3D Stepper: stepping through .step-item swaps the 3D prop via data-prop -->
+  <section class="slide" data-title="Contextual 3D Steps" data-transition="slide" data-cam="0.6,0.2,9" data-hero="2.8,-0.1,.9" data-prop="chart" data-flourish="true">
+    <div class="col">
+      <div class="kicker">Dynamic 3D</div>
+      <h2>Each concept triggers its own <span class="em">3D model</span></h2>
+      <div data-step-group>
+        <ol class="ladder">
+          <li class="step-item is-active" data-prop="chart">1. Data &amp; Charts — swaps to a 3D rising bar chart &amp; pie slice</li>
+          <li class="step-item" data-prop="diagram">2. Systems &amp; Diagrams — swaps to 3D connected hierarchy nodes</li>
+          <li class="step-item" data-prop="storyboard">3. Visual Sequences — swaps to 3D curved storyboard frames</li>
+        </ol>
+      </div>
+    </div>
+    <aside class="notes">Press the forward/backward arrow keys to watch the 3D model swap smoothly for every step.</aside>
+  </section>
+
+  <!-- 2b. Big statement, one point per click -->
+  <section class="slide" data-title="Why it matters" data-transition="slide" data-cam="0.8,0.3,9" data-hero="2.8,-0.2,.9" data-prop="hero">
+    <div class="col">
+      <h2>Why this matters <span class="em">now</span></h2>
+      <ul style="list-style:none;padding:0;display:grid;gap:18px">
+        <li class="step">One short point the presenter talks through.</li>
+        <li class="step">A second point, same weight.</li>
+        <li class="step">A third point that lands the argument.</li>
+      </ul>
+    </div>
+    <aside class="notes">Pause after each point. Take one answer from the room.</aside>
+  </section>
+
+  <!-- 3. Interactive: full-width flip cards (3D canvas cleanly hidden via data-hero="hide" — zero corner peeking) -->
+  <section class="slide" data-title="Flip cards" data-transition="morph" data-hero="hide">
+    <h2>Pick a card</h2>
+    <div class="grid3">
+      <button class="flip tilt step" aria-pressed="false"><span class="flip-in">
+        <span class="face"><h3>Idea one</h3><p class="muted">Tap to reveal</p></span>
+        <span class="face back"><h3 class="em">Answer one</h3><p>Short explanation.</p></span></span></button>
+      <button class="flip tilt step" aria-pressed="false"><span class="flip-in">
+        <span class="face"><h3>Idea two</h3><p class="muted">Tap to reveal</p></span>
+        <span class="face back"><h3 class="em">Answer two</h3><p>Short explanation.</p></span></span></button>
+      <button class="flip tilt step" aria-pressed="false"><span class="flip-in">
+        <span class="face"><h3>Idea three</h3><p class="muted">Tap to reveal</p></span>
+        <span class="face back"><h3 class="em">Answer three</h3><p>Short explanation.</p></span></span></button>
+    </div>
+  </section>
+
+
+  <!-- 4. Quiz: click an answer, instant feedback (set data-answer; translate data-right / data-wrong). Keys 1-9 also answer. -->
+  <section class="slide" data-title="Quiz" data-cam="0.8,0.2,9" data-hero="3.4,0,.8">
+    <div class="col">
+      <div class="kicker">Check understanding</div>
+      <h2>Which statement is true?</h2>
+      <div class="quiz" data-answer="b" role="group" aria-label="Quiz">
+        <button class="opt" data-v="a">First option</button>
+        <button class="opt" data-v="b">Second option (the correct one)</button>
+        <button class="opt" data-v="c">Third option</button>
+      </div>
+      <div class="fb" aria-live="polite" data-right="Correct. Ask someone to say why." data-wrong="Not quite. Look again."></div>
+    </div>
+    <aside class="notes">Let two people argue before revealing. The answer shows on first click.</aside>
+  </section>
+
+  <!-- 5. Live vote + countdown timer: the room votes, bars grow. Resets when the slide reopens. -->
+  <section class="slide" data-title="Vote" data-cam="-0.8,0,9" data-hero="3.4,0,.8">
+    <div class="col">
+      <h2>Vote, then discuss</h2>
+      <button class="timer" data-timer="30" aria-label="Start or stop the timer">00:30</button>
+      <div class="poll" role="group" aria-label="Poll">
+        <button class="pv" data-v="a"><span class="bar"></span><span>Option A</span><span class="n">0</span></button>
+        <button class="pv" data-v="b"><span class="bar"></span><span>Option B</span><span class="n">0</span></button>
+        <button class="pv" data-v="c"><span class="bar"></span><span>Option C</span><span class="n">0</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Big number: counts up; always carries a source line -->
+  <section class="slide" data-title="Big number" data-cam="-0.8,0,9" data-hero="2.8,0.2,.9">
+    <div class="col">
+      <div class="big"><span data-count="36">0</span><span>%</span></div>
+      <p class="step">of people already do this. What about this room?</p>
+      <p class="src">Source: Illustrative value, replace with a verified source.</p>
+    </div>
+  </section>
+
+  <!-- 6b. Hybrid Native SVG Infographic Slide (3D canvas hides automatically via data-hero="hide") -->
+  <section class="slide" data-title="Native SVG Infographic" data-visual="infographic" data-hero="hide">
+    <div class="split-visual">
+      <div>
+        <div class="kicker">Model-Crafted Infographic</div>
+        <h2>Editorial line + <span class="em">animated sketch</span></h2>
+        <ul style="list-style:none;padding:0;display:grid;gap:14px;margin-top:16px">
+          <li class="step">Every diagram and kroki sketch is drawn natively in inline SVG — zero external stock files.</li>
+          <li class="step">Setting <code>data-hero="hide"</code> smoothly clears the 3D layer so infographics own the screen.</li>
+        </ul>
+      </div>
+      <div class="infographic-stage">
+        <svg viewBox="0 0 520 340" aria-label="Editorial callout diagram">
+          <!-- Crisp 2px editorial flat-line diagram with orthogonal leader lines -->
+          <rect x="40" y="130" width="230" height="145" rx="14" fill="none" stroke="currentColor" stroke-width="2.5" class="svg-draw"/>
+          <line x1="40" y1="162" x2="270" y2="162" stroke="currentColor" stroke-width="2" class="svg-draw"/>
+          <circle cx="62" cy="146" r="5" fill="var(--accent)"/><circle cx="80" cy="146" r="5" fill="var(--accent2)"/>
+          <rect x="65" y="185" width="140" height="14" rx="7" fill="var(--accent2)" opacity=".55"/>
+          <rect x="65" y="212" width="175" height="12" rx="6" fill="currentColor" opacity=".2"/>
+          <rect x="65" y="236" width="120" height="12" rx="6" fill="currentColor" opacity=".2"/>
+          <!-- Orthogonal callout leader line -->
+          <polyline points="200,130 200,68 300,68" fill="none" stroke="currentColor" stroke-width="2" class="svg-draw"/>
+          <circle cx="200" cy="130" r="5" fill="var(--accent)"/>
+          <rect x="300" y="46" width="175" height="44" rx="22" fill="var(--accent)" stroke="currentColor" stroke-width="2"/>
+          <text x="387" y="75" text-anchor="middle" font-size="20" font-weight="700" fill="var(--bg)">Key Insight</text>
+          <!-- Second node -->
+          <polyline points="270,225 335,225 335,265" fill="none" stroke="currentColor" stroke-width="2" class="svg-draw"/>
+          <circle cx="335" cy="265" r="26" fill="var(--accent2)" stroke="currentColor" stroke-width="2"/>
+          <text x="335" y="273" text-anchor="middle" font-size="22" font-weight="700" fill="var(--bg)">A</text>
+        </svg>
+      </div>
+    </div>
+    <aside class="notes">Native inline SVG infographics animate smoothly with stroke-dashoffset and hide the 3D layer automatically.</aside>
+  </section>
+
+  <!-- 7. Close -->
+  <section class="slide" data-title="Remember" data-cam="0,0,9" data-hero="2.7,0,1">
+    <div class="col">
+      <h2>The one sentence to remember.</h2>
+      <ol style="padding-inline-start:1.2em;display:grid;gap:12px">
+        <li class="step">Next step one</li><li class="step">Next step two</li><li class="step">Next step three</li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<div id="list" role="dialog" aria-label="Slide list"></div>
+<div id="notes" role="note" aria-live="polite"></div>
+<!-- Clean presentation canvas: no on-screen HUD bar. Use Arrow keys / Space / O / F / R / S. -->
+
+<!-- GSAP (optional: a tiny shim keeps the deck working with jump cuts if the CDN is blocked) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+<!-- ===== ENGINE (classic script: no imports, so nothing here can be broken by a failed 3D load) ===== -->
+<script>
+(function(){
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const root=document.documentElement, RTL=root.dir==='rtl', SIGN=RTL?-1:1;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LOC=root.lang+'-u-nu-'+(root.dataset.digits||'latn');
+const nf=new Intl.NumberFormat(LOC), nf2=new Intl.NumberFormat(LOC,{minimumIntegerDigits:2});
+
+if(!window.gsap){ // graceful degradation: apply end state immediately
+  const ap=(t,v)=>{ if(t&&t.style){ if('opacity'in v)t.style.opacity=v.opacity;
+      const x=v.x||0,y=v.y||0,s=v.scale==null?1:v.scale; t.style.transform=`translate(${x}px,${y}px) scale(${s})`; }
+    else if(t) Object.assign(t,v); };
+  window.gsap={set:(t,v)=>[].concat(t).forEach(e=>ap(e,v)),
+    to:(t,v)=>{[].concat(t).forEach(e=>ap(e,v)); v.onUpdate&&v.onUpdate(); v.onComplete&&v.onComplete();},
+    fromTo:(t,a,b)=>window.gsap.to(t,b), killTweensOf(){}};
+}
+const D=d=>RM?0:d;
+
+const slides=$$('.slide'); let cur=-1, step=0, actions=[];
+const bar=$('#bar'), notes=$('#notes'), list=$('#list');
+
+function fit(){ root.style.setProperty('--s',Math.min(innerWidth/1600,innerHeight/900)); }
+addEventListener('resize',fit); fit();
+
+/* interaction helpers: poll bars + timer */
+function pollDraw(p){ const c=p._c||{}, tot=Object.values(c).reduce((a,b)=>a+b,0);
+  $$('.pv',p).forEach(b=>{ const n=c[b.dataset.v]||0; $('.n',b).textContent=nf.format(n); $('.bar',b).style.width=(tot?n/tot*100:0)+'%'; }); }
+const tfmt=sec=>nf2.format(Math.floor(sec/60))+':'+nf2.format(sec%60);
+function timerStop(t,reset){ clearInterval(t._on); t._on=null; t.classList.remove('run');
+  if(reset){ t._left=+t.dataset.timer; t.textContent=tfmt(t._left); t.classList.remove('end'); } }
+function timerStart(t){ timerStop(t,false); t.classList.remove('end'); if(!(t._left>0)) t._left=+t.dataset.timer;
+  t.classList.add('run'); t._on=setInterval(()=>{ t._left--; t.textContent=tfmt(t._left); if(t._left<=0){ timerStop(t,false); t.classList.add('end'); } },1000); }
+
+function setGroupIndex(grp, idx){
+  const items=$$('.step-item',grp);
+  items.forEach((it,k)=>{
+    const active=k===idx;
+    it.classList.toggle('is-active',active);
+    it.setAttribute('aria-current',active?'step':'false');
+  });
+  const activeItem=items[idx]||null;
+  grp.dispatchEvent(new CustomEvent('deck:step-group',{bubbles:true,detail:{index:idx,item:activeItem}}));
+  if(activeItem && activeItem.dataset.prop){
+    dispatchEvent(new CustomEvent('deck:prop',{detail:{prop:activeItem.dataset.prop}}));
+  }
+}
+function buildActions(s){
+  const list=[];
+  // 1. Standard reveal steps (.step)
+  $$('.step',s).forEach(el=>{
+    list.push({
+      fwd:()=>gsap.to(el,{opacity:1,y:0,duration:D(.45),ease:'power2.out'}),
+      bwd:()=>gsap.to(el,{opacity:0,y:24,duration:D(.35),ease:'power2.in'}),
+      set:on=>gsap.set(el,on?{opacity:1,y:0}:{opacity:0,y:24})
+    });
+  });
+  // 2. Flip cards (.flip) advance/reverse via arrow keys as well as click
+  $$('.flip',s).forEach(f=>{
+    list.push({
+      fwd:()=>{ f.classList.add('on'); f.setAttribute('aria-pressed','true'); },
+      bwd:()=>{ f.classList.remove('on'); f.setAttribute('aria-pressed','false'); },
+      set:on=>{ f.classList.toggle('on',on); f.setAttribute('aria-pressed',String(on)); }
+    });
+  });
+  // 3. Sequential step groups ([data-step-group] e.g. maturity ladder, timeline, tabs)
+  $$('[data-step-group]',s).forEach(grp=>{
+    const items=$$('.step-item',grp);
+    for(let idx=1; idx<items.length; idx++){
+      list.push({
+        fwd:()=>setGroupIndex(grp,idx),
+        bwd:()=>setGroupIndex(grp,idx-1),
+        set:on=>setGroupIndex(grp,on?items.length-1:0)
+      });
+    }
+  });
+  return list;
+}
+function reset(s,full){
+  const rawSteps=$$('.step',s);
+  gsap.killTweensOf(rawSteps);
+  actions=buildActions(s);
+  step=full?actions.length:0;
+  $$('[data-step-group]',s).forEach(grp=>setGroupIndex(grp,full?Math.max(0,$$('.step-item',grp).length-1):0));
+  actions.forEach(a=>a.set(full));
+  if(!full){ $$('.flip.on',s).forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false')}); }
+  $$('.quiz',s).forEach(q=>{ q.classList.remove('done'); $$('.opt',q).forEach(o=>o.classList.remove('right','wrong')); });
+  $$('.fb',s).forEach(f=>f.textContent='');
+  $$('.poll',s).forEach(p=>{ p._c={}; pollDraw(p); });
+  $$('[data-timer]',s).forEach(t=>timerStop(t,true));
+  $$('[data-count]',s).forEach(el=>{
+    const to=+el.dataset.count, o={v:full?to:0};
+    el.textContent=nf.format(o.v);
+    if(!full) gsap.to(o,{v:to,duration:D(1.3),delay:.25,ease:'power2.out',onUpdate:()=>el.textContent=nf.format(Math.round(o.v))});
+  });
+  // Animate hand-drawn kroki sketches & SVG infographic connectors (.svg-draw)
+  $$('.svg-draw',s).forEach((el, idx)=>{
+    if(typeof el.getTotalLength!=='function') return;
+    const len=el.getTotalLength();
+    gsap.killTweensOf(el);
+    el.style.strokeDasharray=len;
+    if(full||RM){ el.style.strokeDashoffset=0; }
+    else {
+      el.style.strokeDashoffset=len;
+      gsap.to(el,{strokeDashoffset:0,duration:D(.95),delay:.18+idx*.12,ease:'power2.out'});
+    }
+  });
+}
+// Optional 1-click local photo loader for .photo-frame.is-drop slots
+document.addEventListener('click',e=>{
+  const slot=e.target.closest('.photo-frame.is-drop'); if(!slot) return;
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{ const f=inp.files?.[0]; if(!f) return; const r=new FileReader();
+    r.onload=()=>{ slot.innerHTML=`<img src="${r.result}" alt="${slot.dataset.photoHint||'Slide photo'}">`; slot.classList.remove('is-drop'); };
+    r.readAsDataURL(f); };
+  inp.click();
+});
+function go(i,{full=false,dir=1}={}){
+  i=Math.max(0,Math.min(slides.length-1,i)); if(i===cur)return;
+  const prev=slides[cur], next=slides[i], kind=next.dataset.transition||'fade';
+  if(prev) $$('[data-timer]',prev).forEach(t=>timerStop(t,true));
+  cur=i;                                   // update BEFORE tweening: zero-duration tweens fire onComplete synchronously
+  // Immediately hide all inactive slides and kill pending tweens so slides never overlap
+  slides.forEach((s,idx)=>{ if(idx!==cur){ gsap.killTweensOf(s); s.classList.remove('active'); s.style.opacity=''; s.style.transform=''; } });
+  next.classList.add('active'); reset(next,full);
+  const isMorph=kind==='morph';
+  gsap.fromTo(next,
+    {opacity:0,x:(kind==='slide'||isMorph)?(isMorph?120:80)*SIGN*dir:0,scale:kind==='zoom'?.94:(isMorph?.96:1)},
+    {opacity:1,x:0,scale:1,duration:D(isMorph?.72:.55),ease:isMorph?'power3.inOut':'power3.out'});
+  // Staggered center-outward zoom for Hexagon Mosaic image reveals (.hex-tile)
+  const hexes=$$('.hex-tile',next);
+  if(hexes.length){
+    gsap.killTweensOf(hexes);
+    if(full||RM){ gsap.set(hexes,{opacity:1,scale:1}); }
+    else { gsap.fromTo(hexes,{opacity:0,scale:0},{opacity:1,scale:1,duration:D(.55),stagger:{from:'center',amount:D(.55)},ease:'back.out(1.25)'}); }
+  }
+  if(bar) bar.style.transform=`scaleX(${(cur+1)/slides.length})`;
+  $$('#list button').forEach((b,k)=>b.toggleAttribute('aria-current',k===cur)); 
+  if(notes.classList.contains('open')) showNotes();
+  window.__deckCurrent={el:next,index:cur,totalSteps:actions.length,dir};
+  dispatchEvent(new CustomEvent('deck:slide',{detail:window.__deckCurrent}));
+}
+function showNotes(){ const n=$('.notes',slides[cur]); notes.textContent=n?n.textContent:''; }
+function next(){ if(step<actions.length){ actions[step].fwd(); step++; dispatchEvent(new CustomEvent('deck:step',{detail:{dir:1,step,total:actions.length}})); }
+  else go(cur+1,{dir:1}); }
+function prev(){ if(step>0){ step--; actions[step].bwd(); dispatchEvent(new CustomEvent('deck:step',{detail:{dir:-1,step,total:actions.length}})); }
+  else go(cur-1,{full:true,dir:-1}); }
+function replay(){ const i=cur; cur=-1; go(i); }
+
+/* list overlay */
+slides.forEach((s,i)=>{ const b=document.createElement('button');
+  b.textContent=`${nf.format(i+1)}. ${s.dataset.title||$('h1,h2',s)?.textContent||''}`;
+  b.onclick=()=>{list.classList.remove('open');go(i,{full:true});}; list.appendChild(b); });
+
+/* flip cards: click / Enter / Space on the focused card */
+document.addEventListener('click',e=>{ const f=e.target.closest('.flip'); if(!f)return;
+  const on=f.classList.toggle('on'); f.setAttribute('aria-pressed',on); });
+
+/* quiz / poll / timer: delegated clicks */
+document.addEventListener('click',e=>{
+  const o=e.target.closest('.opt');
+  if(o){ const q=o.closest('.quiz'); if(q.classList.contains('done')) return;
+    q.classList.add('done'); const ok=o.dataset.v===q.dataset.answer; o.classList.add(ok?'right':'wrong');
+    if(!ok) $$('.opt',q).find(x=>x.dataset.v===q.dataset.answer)?.classList.add('right');
+    const fb=$('.fb',q.closest('.slide')); if(fb) fb.textContent=ok?fb.dataset.right:fb.dataset.wrong; return; }
+  const v=e.target.closest('.pv');
+  if(v){ const p=v.closest('.poll'); p._c=p._c||{}; p._c[v.dataset.v]=(p._c[v.dataset.v]||0)+1; pollDraw(p); return; }
+  const t=e.target.closest('[data-timer]');
+  if(t){ t._on?timerStop(t,false):timerStart(t); }
+});
+
+/* CSS-3D tilt: pointer-driven, disabled for reduced motion and touch */
+if(!RM) document.addEventListener('pointermove',e=>{
+  if(e.pointerType==='touch') return;
+  $$('.tilt').forEach(t=>{
+    const r=t.getBoundingClientRect();
+    if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom){ t.style.transform=''; return; }
+    const x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+    t.style.transform=`perspective(900px) rotateX(${-y*10}deg) rotateY(${x*12}deg)`;
+  });
+});
+
+/* keyboard: arrows follow reading direction (RTL: left = next) */
+addEventListener('keydown',e=>{
+  if(e.altKey||e.ctrlKey||e.metaKey) return;
+  const onBtn=e.target.closest&&e.target.closest('button');
+  if(onBtn&&(e.key===' '||e.key==='Enter')) return; // let the button act
+  const k=e.key, fwd=RTL?'ArrowLeft':'ArrowRight', back=RTL?'ArrowRight':'ArrowLeft';
+  if(k===fwd||k===' '||k==='PageDown'){e.preventDefault();next();}
+  else if(k===back||k==='PageUp'){e.preventDefault();prev();}
+  else if(k==='o'||k==='O'){list.classList.toggle('open');}
+  else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():root.requestFullscreen?.();}
+  else if(k==='r'||k==='R'){replay();}
+  else if(k==='s'||k==='S'){notes.classList.toggle('open');showNotes();}
+  else if(/^[1-9]$/.test(k)){ const b=$$('.opt,.pv',slides[cur])[+k-1]; if(b) b.click(); }   // answer / vote with the number keys
+  else if(k==='Escape'){list.classList.remove('open');notes.classList.remove('open');}
+  else if(k==='Home'){go(0,{full:true,dir:-1});} else if(k==='End'){go(slides.length-1,{dir:1});}
+});
+// On-screen HUD buttons removed by design; keyboard & swipe handle all navigation.
+
+/* swipe: direction follows reading direction */
+let tx=null; addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+addEventListener('touchend',e=>{ if(tx==null)return; const dx=e.changedTouches[0].clientX-tx; tx=null;
+  if(Math.abs(dx)<50)return; ((dx<0)!==RTL)?next():prev(); },{passive:true});
+
+go(0);
+})();
+</script>
+
+<!-- ===== 3D LAYER: separate module; if it fails, the deck keeps working (no-gl fallback) ===== -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }
+</script>
+<script type="module">
+const root=document.documentElement, RTL=root.dir==='rtl', SIGN=RTL?-1:1;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+try{
+  const THREE=await import('three');
+  const canvas=document.getElementById('gl');
+  const css=n=>new THREE.Color(getComputedStyle(root).getPropertyValue(n).trim());
+  const lowPower=(navigator.hardwareConcurrency||4)<=2;
+
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:!lowPower,alpha:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,lowPower?1:2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(40,1,.1,100);
+  const accent=css('--accent'), accent2=css('--accent2'), bg=css('--bg');
+  const isLightTheme=(bg.r*.299+bg.g*.587+bg.b*.114)>0.55;
+  const world=new THREE.Group(); scene.add(world);           // main contextual 3D prop group
+
+  /* Studio shadow key light + soft shadow-catcher plane */
+  const shadowKey=new THREE.DirectionalLight(0xffffff, isLightTheme?1.8:2.1);
+  shadowKey.position.set(4, 7, 6);
+  shadowKey.castShadow=true;
+  shadowKey.shadow.mapSize.set(lowPower?512:1024, lowPower?512:1024);
+  shadowKey.shadow.camera.near=1; shadowKey.shadow.camera.far=24;
+  shadowKey.shadow.camera.left=-6; shadowKey.shadow.camera.right=6;
+  shadowKey.shadow.camera.top=6; shadowKey.shadow.camera.bottom=-6;
+  shadowKey.shadow.bias=-0.0005;
+  scene.add(shadowKey);
+
+  /* Procedural soft radial contact-shadow texture (breathes with floating Y height) */
+  function makeShadowDisc(radius=1.55, baseOp=isLightTheme?.22:.36){
+    const c=document.createElement('canvas'); c.width=128; c.height=128;
+    const ctx=c.getContext('2d');
+    const g=ctx.createRadialGradient(64,64,4,64,64,62);
+    g.addColorStop(0,'rgba(15,12,22,0.58)'); g.addColorStop(0.55,'rgba(15,12,22,0.20)'); g.addColorStop(1,'rgba(15,12,22,0)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,128,128);
+    const tex=keep(new THREE.CanvasTexture(c));
+    const mat=keep(new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:baseOp,depthWrite:false}));
+    const mesh=new THREE.Mesh(keep(new THREE.PlaneGeometry(radius*2,radius*1.35)), mat);
+    mesh.rotation.x=-Math.PI/2; mesh.userData.baseOp=baseOp;
+    return mesh;
+  }
+  const heroShadow=makeShadowDisc(1.75);
+  heroShadow.position.set(0,-1.85,0);
+  world.add(heroShadow);
+
+  /* Invisible WebGL shadow-catcher floor beneath world */
+  const shadowFloor=new THREE.Mesh(
+    keep(new THREE.PlaneGeometry(10,10)),
+    keep(new THREE.ShadowMaterial({opacity:isLightTheme?.13:.26}))
+  );
+  shadowFloor.rotation.x=-Math.PI/2; shadowFloor.position.y=-1.88; shadowFloor.receiveShadow=true;
+  world.add(shadowFloor);
+  const hold=[];                                             // things to dispose
+  const keep=o=>{hold.push(o);return o;};
+
+  /* shared dust/particle field */
+  {
+    const n=lowPower?150:400, pos=new Float32Array(n*3);
+    for(let i=0;i<n;i++){pos[i*3]=(Math.random()-.5)*24;pos[i*3+1]=(Math.random()-.5)*14;pos[i*3+2]=(Math.random()-.5)*14-2;}
+    const g=keep(new THREE.BufferGeometry()); g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const m=keep(new THREE.PointsMaterial({color:accent,size:.035,transparent:true,opacity:.55,depthWrite:false}));
+    scene.add(new THREE.Points(g,m));
+  }
+
+  /* ===== MOTIFS: keep only the one used. Each returns update(t) ===== */
+  const MOTIFS={
+    // ideas: floating platonic solids (wire + soft fill), for philosophy / concepts / education
+    ideas(){
+      scene.add(new THREE.AmbientLight(0xffffff,.8));
+      const key=new THREE.DirectionalLight(0xffffff,2.2); key.position.set(3,4,5); scene.add(key);
+      const geos=[new THREE.IcosahedronGeometry(1),new THREE.OctahedronGeometry(.7),new THREE.DodecahedronGeometry(.6),new THREE.TetrahedronGeometry(.7)];
+      const items=geos.map((g,i)=>{
+        keep(g);
+        const fill=keep(new THREE.MeshStandardMaterial({color:i%2?accent2:accent,flatShading:true,transparent:true,opacity:.4,roughness:.5,emissive:i%2?accent2:accent,emissiveIntensity:.18}));
+        const line=keep(new THREE.LineBasicMaterial({color:i%2?accent2:accent}));
+        const grp=new THREE.Group(); const e=keep(new THREE.EdgesGeometry(g));
+        grp.add(new THREE.Mesh(g,fill),new THREE.LineSegments(e,line));
+        const a=i/geos.length*Math.PI*2; grp.position.set(Math.cos(a)*1.7,Math.sin(a)*1.1,Math.sin(a*2)*.6);
+        grp.userData={a,s:.3+Math.random()*.3}; world.add(grp); return grp; });
+      return t=>items.forEach((g,i)=>{ g.rotation.x=t*g.userData.s; g.rotation.y=t*g.userData.s*1.3; g.position.y=Math.sin(t*.6+g.userData.a)*1.1; });
+    },
+    // frames: a tilted carousel of gold frames under a warm spot, for art / culture / heritage / formal talks
+    frames(){
+      scene.add(new THREE.AmbientLight(0xffffff,.5));
+      const spot=new THREE.SpotLight(accent,700,30,.7,.6,2); spot.position.set(0,5,7); scene.add(spot);
+      const ring=new THREE.Group(); ring.rotation.x=.28; world.add(ring);
+      const pg=keep(new THREE.PlaneGeometry(1.1,1.5)), eg=keep(new THREE.EdgesGeometry(pg));
+      const ig=keep(new THREE.PlaneGeometry(.88,1.2)), ie=keep(new THREE.EdgesGeometry(ig));
+      const canvasM=keep(new THREE.MeshStandardMaterial({color:0x22397a,emissive:accent,emissiveIntensity:.07,roughness:.8,side:THREE.DoubleSide}));
+      const frameM=keep(new THREE.LineBasicMaterial({color:accent})), matM=keep(new THREE.LineBasicMaterial({color:accent2,transparent:true,opacity:.6}));
+      for(let i=0;i<7;i++){ const a=i/7*Math.PI*2, f=new THREE.Group();
+        f.add(new THREE.Mesh(pg,canvasM),new THREE.LineSegments(eg,frameM),new THREE.LineSegments(ie,matM));
+        f.position.set(Math.cos(a)*2,0,Math.sin(a)*2); f.lookAt(0,0,0); ring.add(f); }
+      return t=>{ ring.rotation.y=t*.15; };
+    },
+    // network: nodes and links, for science / tech / data / systems
+    network(){
+      scene.add(new THREE.AmbientLight(0xffffff,.9));
+      const N=lowPower?28:46, pts=[], pos=new Float32Array(N*3);
+      for(let i=0;i<N;i++){ const v=new THREE.Vector3().randomDirection().multiplyScalar(1.2+Math.random()*1.1); pts.push(v); pos.set([v.x,v.y,v.z],i*3); }
+      const ng=keep(new THREE.BufferGeometry()); ng.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      const nodes=new THREE.Points(ng,keep(new THREE.PointsMaterial({color:accent,size:.1,sizeAttenuation:true})));
+      const seg=[]; for(let i=0;i<N;i++)for(let j=i+1;j<N;j++) if(pts[i].distanceTo(pts[j])<1.2) seg.push(pts[i],pts[j]);
+      const lg=keep(new THREE.BufferGeometry().setFromPoints(seg));
+      const lines=new THREE.LineSegments(lg,keep(new THREE.LineBasicMaterial({color:accent2,transparent:true,opacity:.4})));
+      const grp=new THREE.Group(); grp.add(nodes,lines); world.add(grp);
+      return t=>{ grp.rotation.y=t*.18; grp.rotation.x=Math.sin(t*.15)*.3; };
+    },
+    // chiaroscuro: one sculptural form, one warm light, deep shadow, for history / drama / baroque / cinematic
+    chiaroscuro(){
+      scene.fog=new THREE.FogExp2(bg,.05);
+      scene.add(new THREE.AmbientLight(0xffffff,.08));
+      const spot=new THREE.SpotLight(accent,900,30,.5,.7,2); spot.position.set(-4,5,5); scene.add(spot);
+      const g=keep(new THREE.TorusKnotGeometry(1,.32,160,24));
+      const m=keep(new THREE.MeshStandardMaterial({color:accent2,metalness:.55,roughness:.38}));
+      const knot=new THREE.Mesh(g,m); knot.scale.setScalar(.85); world.add(knot);
+      return t=>{ knot.rotation.y=t*.25; knot.rotation.x=Math.sin(t*.2)*.3; };
+    },
+    // papyrus: warm sepia/bronze ancient scroll & compass ring for historical lessons
+    papyrus(){
+      scene.add(new THREE.AmbientLight(0xfff4e0, 1.3));
+      const key=new THREE.DirectionalLight(0xffdfba, 2.2); key.position.set(4,5,6); scene.add(key);
+      const woodM=keep(new THREE.MeshStandardMaterial({color:0x482400,roughness:.65,metalness:.25}));
+      const paperM=keep(new THREE.MeshStandardMaterial({color:0xc1ad8f,roughness:.85,metalness:.05}));
+      const bronzeM=keep(new THREE.MeshStandardMaterial({color:0x8c5523,roughness:.45,metalness:.65}));
+      const grp=new THREE.Group();
+      const body=new THREE.Mesh(keep(new THREE.CylinderGeometry(.58,.58,2.2,24)), paperM);
+      body.rotation.z=Math.PI/2;
+      const rodT=new THREE.Mesh(keep(new THREE.CylinderGeometry(.13,.13,2.55,16)), woodM);
+      rodT.rotation.z=Math.PI/2; rodT.position.set(0,.58,0);
+      const rodB=rodT.clone(); rodB.position.set(0,-.58,0);
+      const ring=new THREE.Mesh(keep(new THREE.TorusGeometry(1.55,.04,10,48)), bronzeM);
+      ring.rotation.x=Math.PI/3;
+      grp.add(body, rodT, rodB, ring); grp.rotation.z=-0.22; world.add(grp);
+      return t=>{ grp.rotation.y=Math.sin(t*.35)*.28; ring.rotation.z=t*.22; grp.position.y=Math.sin(t*.7)*.1; };
+    },
+    // muted-morph: minimalist matte-clay geometric sculptures with soft studio shadows
+    'muted-morph'(){
+      scene.add(new THREE.AmbientLight(0xffffff, 1.35));
+      const mPlum=keep(new THREE.MeshStandardMaterial({color:accent,roughness:.52,metalness:.08}));
+      const mLav=keep(new THREE.MeshStandardMaterial({color:accent2,roughness:.58,metalness:.05}));
+      const mClay=keep(new THREE.MeshStandardMaterial({color:0xd9d4de,roughness:.65,metalness:.04}));
+      const grp=new THREE.Group();
+      const torus=new THREE.Mesh(keep(new THREE.TorusGeometry(.95,.32,24,48)), mLav);
+      const pill=new THREE.Mesh(keep(new THREE.CapsuleGeometry(.34,.95,12,24)), mPlum);
+      pill.position.set(.75,.55,.35); pill.rotation.z=-.45;
+      const orb=new THREE.Mesh(keep(new THREE.SphereGeometry(.42,28,28)), mClay);
+      orb.position.set(-.85,-.45,.5);
+      grp.add(torus, pill, orb); world.add(grp);
+      return t=>{ grp.rotation.y=Math.sin(t*.32)*.35; torus.rotation.x=t*.22; pill.position.y=.55+Math.sin(t*.8)*.12; orb.position.y=-.45+Math.cos(t*.7)*.12; };
+    }
+  };
+  /* ===== CONTEXTUAL MULTI-PROP REGISTRY (replace/expand with topic-specific 3D models!) =====
+     Declare data-prop="propName" on any <section class="slide"> OR on any .step-item to swap models smoothly. */
+  const heroGroup=new THREE.Group(); world.add(heroGroup);
+  const propGroups={}; const propUpdaters={};
+  function registerProp(name, buildFn){
+    const g=new THREE.Group(); g.visible=false; g.scale.setScalar(0.001);
+    world.add(g);
+    propGroups[name]=g;
+    propUpdaters[name]=buildFn(g) || (()=>{});
+  }
+  // Default 'hero' prop uses the chosen motif inside heroGroup
+  const baseUpdate=(()=>{
+    const prevWorld=world;
+    const fn=(MOTIFS[root.dataset.motif]||MOTIFS.ideas)();
+    // Move newly created motif objects into heroGroup (leaving heroShadow, shadowFloor, heroGroup intact)
+    const keepStatic=new Set([heroShadow, shadowFloor, heroGroup]);
+    [...world.children].forEach(ch=>{ if(!keepStatic.has(ch)) heroGroup.add(ch); });
+    propGroups.hero=heroGroup; propUpdaters.hero=fn;
+    return fn;
+  })();
+
+  // Example contextual prop 1: 3D Bar Chart + Pie Slice (use data-prop="chart")
+  registerProp('chart', g=>{
+    const m1=keep(new THREE.MeshStandardMaterial({color:accent,metalness:.35,roughness:.4}));
+    const m2=keep(new THREE.MeshStandardMaterial({color:accent2,metalness:.35,roughness:.4}));
+    const baseG=keep(new THREE.BoxGeometry(2.6,.12,1.2));
+    const baseM=new THREE.Mesh(baseG, keep(new THREE.MeshStandardMaterial({color:0x1a334d,metalness:.4,roughness:.6})));
+    baseM.position.y=-1.0; g.add(baseM);
+    const heights=[.8, 1.4, 2.0, 1.15];
+    const bars=heights.map((h,i)=>{
+      const bg=keep(new THREE.BoxGeometry(.42,h,.42));
+      const bm=new THREE.Mesh(bg, i%2?m2:m1);
+      bm.position.set(-0.9+i*0.6, -0.94+h/2, 0);
+      g.add(bm); return bm;
+    });
+    const pieG=keep(new THREE.CylinderGeometry(.55,.55,.18,24,1,false,0,Math.PI*1.35));
+    const pie=new THREE.Mesh(pieG, m1);
+    pie.rotation.x=Math.PI/3; pie.position.set(1.25, .85, .3); g.add(pie);
+    return t=>{ pie.rotation.y=t*.5; bars.forEach((b,i)=>{ b.position.y=-0.94+heights[i]/2+Math.sin(t*1.6+i)*.05; }); };
+  });
+
+  // Example contextual prop 2: 3D Connected Diagram / Hierarchy Nodes (use data-prop="diagram")
+  registerProp('diagram', g=>{
+    const m1=keep(new THREE.MeshStandardMaterial({color:accent,metalness:.4,roughness:.35}));
+    const m2=keep(new THREE.MeshStandardMaterial({color:accent2,metalness:.4,roughness:.35}));
+    const coords=[[0,1.1,0],[-1.1,0,0],[0,0,.3],[1.1,0,0],[-.6,-1.05,.2],[.6,-1.05,-.2]];
+    const nodes=coords.map((p,i)=>{
+      const ng=keep(new THREE.OctahedronGeometry(i===0?.36:.24));
+      const nm=new THREE.Mesh(ng, i===0?m1:m2); nm.position.set(...p); g.add(nm); return nm;
+    });
+    const pairs=[[0,1],[0,2],[0,3],[1,4],[2,4],[2,5],[3,5]];
+    const pts=[]; pairs.forEach(([a,b])=>{ pts.push(new THREE.Vector3(...coords[a]), new THREE.Vector3(...coords[b])); });
+    const lg=keep(new THREE.BufferGeometry().setFromPoints(pts));
+    g.add(new THREE.LineSegments(lg, keep(new THREE.LineBasicMaterial({color:accent,transparent:true,opacity:.65}))));
+    return t=>{ g.rotation.y=Math.sin(t*.4)*.25; nodes.forEach((n,i)=>{ n.rotation.y=t*(.5+i*.1); }); };
+  });
+
+  // Example contextual prop 3: 3D Storyboard / Sequential Frames (use data-prop="storyboard")
+  registerProp('storyboard', g=>{
+    const frameM=keep(new THREE.MeshStandardMaterial({color:0x1b3654,metalness:.4,roughness:.5}));
+    const edgeM=keep(new THREE.LineBasicMaterial({color:accent}));
+    const frames=[];
+    for(let i=0;i<3;i++){
+      const fg=keep(new THREE.BoxGeometry(.95,.65,.08));
+      const fm=new THREE.Mesh(fg, frameM);
+      const fe=new THREE.LineSegments(keep(new THREE.EdgesGeometry(fg)), edgeM);
+      const grp=new THREE.Group(); grp.add(fm, fe);
+      grp.position.set((i-1)*1.15, Math.sin(i)*0.2, -Math.abs(i-1)*0.35);
+      grp.rotation.y=(1-i)*0.28; g.add(grp); frames.push(grp);
+    }
+    return t=>{ frames.forEach((f,i)=>{ f.position.y=Math.sin(t*1.2+i*1.1)*0.12; }); };
+  });
+
+  let activePropName='hero';
+  propGroups.hero.visible=true; propGroups.hero.scale.setScalar(1);
+  function setProp(name){
+    const target=propGroups[name]?name:'hero';
+    if(target===activePropName) return;
+    const outG=propGroups[activePropName], inG=propGroups[target];
+    activePropName=target;
+    gsap.killTweensOf([outG.scale, inG.scale, inG.rotation]);
+    if(RM){
+      outG.visible=false; outG.scale.setScalar(.001);
+      inG.visible=true; inG.scale.setScalar(1); frame(0); return;
+    }
+    gsap.to(outG.scale,{x:.001,y:.001,z:.001,duration:.28,ease:'power2.in',onComplete:()=>{ outG.visible=false; }});
+    inG.visible=true; inG.scale.setScalar(.001); inG.rotation.y=-0.6*SIGN;
+    gsap.to(inG.scale,{x:1,y:1,z:1,duration:.45,delay:.16,ease:'back.out(1.4)'});
+    gsap.to(inG.rotation,{y:0,duration:.5,delay:.16,ease:'power3.out'});
+  }
+  const update=t=>{ (propUpdaters[activePropName]||baseUpdate)(t); };
+  addEventListener('deck:prop', e=>{ if(e.detail?.prop) setProp(e.detail.prop); });
+
+  /* ===== director: calm idle + smooth per-slide reframing + restrained stylish 3D flourish on arrow navigation ===== */
+  const base={x:0,y:0,z:9}, ptr={x:0,y:0}; let spin=0, slideMoves=0, lastFlourish=0, flourishKind=0;
+  const pose=el=>{
+    const c=(el.dataset.cam||'0,0,9').split(',').map(Number);
+    const h=(el.dataset.hero||'3,0,1').split(',').map(Number);
+    const r=(el.dataset.rot||'0,0,0').split(',').map(Number);
+    return {cam:{x:c[0]*SIGN,y:c[1],z:c[2]}, hero:{x:h[0]*SIGN,y:h[1],s:h[2]}, rot:{x:r[0]||0,y:(r[1]||0)*SIGN,z:(r[2]||0)*SIGN}};
+  };
+  /* ===== SLIDE 1 CENTERED COVER SURROUND (slow-floating shadowed models around dead-center title) ===== */
+  const coverSurround=new THREE.Group(); coverSurround.visible=false; scene.add(coverSurround);
+  const coverItems=[];
+  {
+    const mA=keep(new THREE.MeshStandardMaterial({color:accent,roughness:.45,metalness:.18}));
+    const mB=keep(new THREE.MeshStandardMaterial({color:accent2,roughness:.52,metalness:.12}));
+    const specs=[
+      {geo:new THREE.TorusGeometry(.52,.17,18,36), mat:mA, x:-4.35, y:.85, z:-.4, ph:0},
+      {geo:new THREE.IcosahedronGeometry(.52,0),   mat:mB, x: 4.35, y:.75, z:-.3, ph:1.6},
+      {geo:new THREE.CapsuleGeometry(.24,.55,10,20),mat:mB,x:-4.05, y:-1.15,z:.2, ph:3.1},
+      {geo:new THREE.OctahedronGeometry(.48,0),    mat:mA, x: 4.10, y:-1.05,z:.1, ph:4.5}
+    ];
+    specs.forEach(sp=>{
+      keep(sp.geo);
+      const wrap=new THREE.Group(); wrap.position.set(sp.x, sp.y, sp.z);
+      const mesh=new THREE.Mesh(sp.geo, sp.mat); mesh.castShadow=true; mesh.receiveShadow=true;
+      const sh=makeShadowDisc(.72, isLightTheme?.16:.28); sh.position.set(0,-.92,0);
+      wrap.add(mesh, sh); coverSurround.add(wrap);
+      coverItems.push({mesh, sh, baseY:sp.y, ph:sp.ph, wrap});
+    });
+  }
+  // Enable shadows on all meshes across all registered props
+  world.traverse(o=>{ if(o.isMesh && o!==heroShadow && o!==shadowFloor){ o.castShadow=true; o.receiveShadow=true; } });
+
+  const frame=t=>{
+    if(coverSurround.visible){
+      coverItems.forEach(it=>{
+        const bob=Math.sin(t*.65+it.ph)*.22;           // slow calm rise & fall ("as if the event is about to begin")
+        it.mesh.position.y=bob;
+        it.mesh.rotation.y=t*.22+it.ph;
+        it.mesh.rotation.x=Math.sin(t*.35+it.ph)*.18;
+        const sc=1-bob*.45; it.sh.scale.set(sc,sc,1);
+        it.sh.material.opacity=Math.max(.04, it.sh.userData.baseOp-bob*.14);
+      });
+    } else {
+      update(t);
+      const bob=Math.sin(t*.85)*.08;
+      propContainerY(bob);
+    }
+    world.rotation.y+=spin; spin*=.92;
+    camera.position.set(base.x+ptr.x*.35,base.y+ptr.y*.2,base.z); camera.lookAt(0,0,0);
+    renderer.render(scene,camera);
+  };
+  function propContainerY(bob){
+    const activeG=propGroups[activePropName];
+    if(activeG){ activeG.position.y=bob; }
+    const sc=1-bob*.75; heroShadow.scale.set(sc,sc,1);
+    heroShadow.material.opacity=Math.max(.05, heroShadow.userData.baseOp-bob*.25);
+  }
+  function apply(el, dir=1, isInit=false){
+    const hide3d=(el.dataset.hero==='hide' || el.dataset.visual==='infographic' || el.dataset.visual==='sketch' || el.dataset.visual==='photo') && el.dataset.hero!=='show';
+    document.body.classList.toggle('gl-hidden', hide3d);
+    if(hide3d){ coverSurround.visible=false; world.visible=false; return; }
+    const isCover=el.dataset.coverSurround==='true';
+    coverSurround.visible=isCover;
+    world.visible=!isCover;
+    if(isCover){
+      const p=pose(el), d=RM?0:1.15;
+      gsap.killTweensOf([base, coverSurround.scale]);
+      gsap.to(base,{...p.cam,duration:d,ease:'power3.inOut'});
+      if(!RM && !isInit){ gsap.fromTo(coverSurround.scale,{x:.92,y:.92,z:.92},{x:1,y:1,z:1,duration:.8,ease:'power2.out'}); }
+      if(RM) frame(0);
+      return;
+    }
+    const activeStepProp=el.querySelector('.step-item.is-active[data-prop]')?.dataset.prop;
+    setProp(activeStepProp || el.dataset.prop || 'hero');
+    const p=pose(el), d=RM?0:1.15;
+    gsap.killTweensOf([base,world.position,world.scale,world.rotation]);
+    spin=0;
+    const now=performance.now();
+    // Trigger a stylish flourish only on alternating slide changes (or data-flourish="true") with a 1.8s cooldown
+    if(!isInit) slideMoves++;
+    const wantFlourish=!RM && !isInit && (now-lastFlourish>1800) && (el.dataset.flourish==='true' || slideMoves%2===0);
+    if(wantFlourish){
+      lastFlourish=now;
+      const mode=(flourishKind++)%2;
+      if(mode===0){
+        // Flourish A: Crisp 360° orbital twist + subtle scale pop
+        gsap.to(world.rotation,{x:p.rot.x,y:p.rot.y+(Math.PI*2*dir*SIGN),z:p.rot.z,duration:1.15,ease:'power3.inOut',
+          onComplete:()=>{ world.rotation.y=p.rot.y; }});
+        gsap.to(world.scale,{x:p.hero.s*1.14,y:p.hero.s*1.14,z:p.hero.s*1.14,duration:.38,ease:'power2.out',
+          onComplete:()=>gsap.to(world.scale,{x:p.hero.s,y:p.hero.s,z:p.hero.s,duration:.65,ease:'power3.inOut'})});
+      }else{
+        // Flourish B: Sleek cinematic bank & lift before settling into pose
+        gsap.to(world.rotation,{x:p.rot.x-0.22,y:p.rot.y+0.55*dir*SIGN,z:p.rot.z+0.32*dir*SIGN,duration:.42,ease:'power2.out',
+          onComplete:()=>gsap.to(world.rotation,{x:p.rot.x,y:p.rot.y,z:p.rot.z,duration:.75,ease:'power3.inOut'})});
+        gsap.to(world.position,{x:p.hero.x,y:p.hero.y+0.42,duration:.42,ease:'power2.out',
+          onComplete:()=>gsap.to(world.position,{x:p.hero.x,y:p.hero.y,duration:.75,ease:'power3.inOut'})});
+        gsap.to(world.scale,{x:p.hero.s,y:p.hero.s,z:p.hero.s,duration:d,ease:'power3.inOut'});
+      }
+      if(mode===0) gsap.to(world.position,{x:p.hero.x,y:p.hero.y,duration:d,ease:'power3.inOut'});
+    }else{
+      gsap.to(world.rotation,{x:p.rot.x,y:p.rot.y,z:p.rot.z,duration:d,ease:'power3.inOut'});
+      gsap.to(world.position,{x:p.hero.x,y:p.hero.y,duration:d,ease:'power3.inOut'});
+      gsap.to(world.scale,{x:p.hero.s,y:p.hero.s,z:p.hero.s,duration:d,ease:'power3.inOut',onComplete:()=>RM&&frame(0)});
+    }
+    gsap.to(base,{...p.cam,duration:d,ease:'power3.inOut'});
+    if(RM) frame(0);
+  }
+  addEventListener('deck:slide',e=>apply(e.detail.el, e.detail.dir||1, false));
+  // Keep 3D calm during internal bullet/card steps so it never feels noisy or jittery
+  if(window.__deckCurrent) apply(window.__deckCurrent.el, 1, true);
+
+  function size(){ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); if(RM)frame(0); }
+  addEventListener('resize',size); size();
+  if(!RM) addEventListener('pointermove',e=>{ptr.x=e.clientX/innerWidth-.5;ptr.y=-(e.clientY/innerHeight-.5);});
+
+  /* interaction: drag the hero to rotate it, click it to spin it (mouse and pen; touch keeps swipe-to-navigate) */
+  document.body.classList.add('gl-on'); window.__deck3d={world,camera};
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(); ray.params.Points.threshold=.15; ray.params.Line.threshold=.1;
+  const SKIP='button,a,input,.flip,.quiz,.poll,[data-timer],#list,#notes,.hud'; let drag=null;
+  addEventListener('pointerdown',e=>{ if(e.button!==0||e.pointerType==='touch'||e.target.closest(SKIP)) return;
+    drag={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false}; });
+  addEventListener('pointermove',e=>{ if(!drag) return;
+    const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag.x=e.clientX; drag.y=e.clientY;
+    if(!drag.moved && Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>5){ drag.moved=true; document.body.classList.add('dragged'); }
+    if(drag.moved){ world.rotation.y+=dx*.009; world.rotation.x=Math.max(-1,Math.min(1,world.rotation.x+dy*.006)); spin=dx*.004; if(RM) frame(0); } });
+  const endDrag=e=>{ if(!drag) return;
+    if(!drag.moved){ ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1); ray.setFromCamera(ndc,camera);
+      if(ray.intersectObjects(world.children,true).length){ spin=.35*(Math.random()<.5?-1:1); if(RM) world.rotation.y+=.8,frame(0); } }
+    drag=null; };
+  addEventListener('pointerup',endDrag); addEventListener('pointercancel',()=>{drag=null;});
+
+  const timer=new THREE.Timer(); timer.connect(document);   // Clock is deprecated since r183
+  if(!RM) renderer.setAnimationLoop(()=>{ timer.update(); frame(timer.getElapsed()); });
+
+  addEventListener('pagehide',()=>{ renderer.setAnimationLoop(null); hold.forEach(o=>o.dispose()); renderer.dispose(); });
+}catch(err){
+  console.warn('3D layer disabled:',err);
+  document.body.classList.add('no-gl');                    // CSS gradient fallback; deck is fully usable
+}
+</script>
+</body>
+</html>
