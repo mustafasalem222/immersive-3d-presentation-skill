@@ -37,3 +37,16 @@ Merged package: original user-provided immersive-presentation files retained; ma
 - **Real 3D Shadows:** Added `PCFSoftShadowMap` directional shadows, invisible `ShadowMaterial` floor catchers, and dynamic breathing radial contact shadow discs beneath every floating 3D object.
 - **Cinematic Centered Cover (Slide 1):** Standardized Slide 1 across all themes as a dead-center cover surrounded by 2D motifs and slow-floating shadowed 3D surround models (`data-cover-surround="true"`).
 - **Motion & Archetype Expansion:** Integrated **Hexagon Mosaic staggered zoom reveals** (`.hex-mosaic`), **Editorial Typography Masks** (`.type-mask-hero`), and the **`muted-morph`** minimalist 3D continuous-morph archetype (`#efefef` / `#000000` / `#5d447b`).
+
+## v9 Updates (Motion.dev-Grade Spring Physics & Silky Cross-Glide Parallax Transitions)
+- Upgraded slide transitions in `assets/deck-template.html` and `SKILL.md` to match Motion.dev (`motion.dev/docs/react-scroll-animations`) smoothness:
+  - Simultaneous GPU-accelerated cross-glide (`expo.out`, subtle scale + soft motion blur handoff) with stale-slide cleanup for zero overlap even on rapid key presses.
+  - Real spring-physics top progress bar (`stiffness: 100, damping: 30, restDelta: 0.001`).
+  - Multi-layer depth parallax on slide entry (background motifs slower than primary text and foreground cards).
+  - Center-outward `.clip-reveal` (`inset(0% 50% 0% 50%) -> inset(0% 0% 0% 0%)`) for showcase images and cards.
+  - Inertia-locked wheel/trackpad navigation (`650ms` cooldown) alongside bidirectional arrow keys and touch swipe.
+
+## v10 Updates (Paper-Cut Infographics & Theatrical Curtains Archetype)
+- Added the **`paper-cut`** archetype (`data-motif="paper-cut"`) to `SKILL.md`, `references/style-archetypes.md`, `references/infographics-and-visuals.md`, and `assets/deck-template.html`:
+  - Multi-layered S-wave paper-cut curtains (`.paper-curtain`) with realistic cast shadows that part on opening and close on the final step.
+  - Extruded 3D display typography (`.extrude-3d`), glowing coral/white infographic tree nodes (`elastic.out`), 3D perspective winding timeline road, and 6 isometric elevated pillars (`.iso-pillars` / `.iso-pillar`).

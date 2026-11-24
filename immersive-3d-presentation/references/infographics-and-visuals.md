@@ -99,3 +99,23 @@ Mix these high-impact techniques selectively on hero, showcase, or photo slides:
 ### C. Continuous Spatial Morph Transitions (`data-transition="morph"`)
 - Inspired by minimalist 3D Morph decks (`Muted 3D Shapes Morph`):
 - Carry persistent visual anchors (section label, subtle accent bar, or muted 3D geometric props) smoothly between consecutive slides: elements glide/scale cleanly from off-canvas staging positions (`x: ±140px`, `scale: 0.86 -> 1`, `duration: 0.75s`, `ease: 'power3.inOut'`) so slides feel like one continuous infinite canvas rather than disconnected cuts.
+
+
+### D. Motion.dev-Grade Spring Physics & Silky Cross-Glide Transitions (v9)
+Inspired by Motion (`motion.dev/docs/react-scroll-animations`):
+- **Spring-Damped Progress Bar:** Drive the top progress bar `#bar` with real spring physics (`stiffness: 100, damping: 30, restDelta: 0.001`) so it glides with velvety inertia rather than a stiff linear transition.
+- **Simultaneous Cross-Glide (Zero Hard Cuts, Zero Overlap):**
+  - Outgoing slide (`prev.classList.add('exiting')`, `z-index: 1; pointer-events: none;`) glides smoothly out (`x: -105 * SIGN * dir`, `scale: 0.955`, `opacity: 0`, `filter: blur(5px)`, `0.58s`, `expo.out`) and cleans up on completion, while any older stale slides are immediately hard-hidden so rapid arrow presses never stack.
+  - Incoming slide (`next.classList.add('active')`, `z-index: 2`) simultaneously glides in (`x: 105 * SIGN * dir -> 0`, `scale: 0.965 -> 1`, `opacity: 0 -> 1`, `filter: blur(4px) -> 0px`, `0.78s`, `expo.out`, `force3D: true`).
+- **Layered Depth Parallax:** Background motifs move slower (`48px`, `0.95s`) than primary text (`105px`, `0.78s`) and foreground cards (`y: 24 -> 0`, `scale: 0.97 -> 1`, `0.84s`), creating physical depth on every slide transition.
+- **Clip-Path Image Reveal (`.clip-reveal`):** Unveil showcase photos/cards smoothly from center outward (`inset(0% 50% 0% 50%) -> inset(0% 0% 0% 0%)`, `0.82s`, `expo.out`).
+- **Inertia-Locked Wheel/Trackpad Glide:** Support smooth trackpad/wheel stepping alongside arrow keys with a `650ms` inertia lock.
+
+
+### E. Paper-Cut Infographics, Curtains & Perspective Road (v10)
+For theatrical, tactile, paper-craft presentations (`data-motif="paper-cut"`):
+- **Layered Paper Depth:** Stack 2–3 SVG wave or panel layers with slightly offset shades (`#ffffff`, `#f2f5f4`, `#e4ebe8`) and soft directional `filter: drop-shadow(...)` so every edge reads like physical cut cardstock.
+- **Paper-Cut Curtain Reveal (`.curtain-left`, `.curtain-right`):** On Slide 1, animate curtains outward (`xPercent: -100` / `+100`, `duration: 1.15s`, `ease: 'expo.out'`) to reveal extruded 3D text (`text-shadow` multi-layer extrusion). On the closing slide, bind the final `.step` action to sweep the curtains closed (and reverse open on Back arrow).
+- **Glowing Tree Nodes (`.tree-node`):** Animate radial glow + elastic pop (`scale: 0 -> 1`, `ease: 'elastic.out(1, 0.55)'`) synchronized with each `.step-item`.
+- **3D Winding Timeline Road:** Draw a perspective-tapered SVG `<path>` road (wide at bottom foreground, narrow toward upper horizon) and place milestone markers with progressive scale (`1.0` near foreground → `0.78` near horizon) revealing step-by-step.
+- **Isometric Pillars (`.iso-pillar`):** Build 4–6 angled-cap pedestals with grounded oval shadows sliding upward (`y: 60 -> 0`, `opacity: 0 -> 1`) on arrow-key steps.

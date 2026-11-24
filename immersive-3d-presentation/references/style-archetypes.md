@@ -184,3 +184,14 @@ When the user uploads a UI reference image or screenshot in Step 1, it **overrid
 - **Tokens:** `--bg #efefef` soft gallery gray, `--surface #ffffff` crisp white card, `--ink #000000` pure black display type, `--muted #5f5970` muted slate-plum, `--accent #5d447b` deep muted plum (= key callouts & progress), `--accent2 #c8bfd6` soft muted lavender (= subtle shape fills & borders).
 - **Fonts:** Clean geometric sans (`Cairo` / `Tajawal` for Arabic; `Plus Jakarta Sans` / `DM Sans` / `Inter` for Latin) with generous whitespace and bold lowercase/clean display headings.
 - **3D & Motion Signature:** Matte clay/satin minimalist 3D shapes (toruses, capsules, spheres, beveled prisms in muted plum, lavender, warm stone, sage) casting real soft studio shadows onto the `#efefef` stage, gliding continuously across slides via `data-transition="morph"` spatial continuity.
+
+
+### `paper-cut`: Paper-Cut Infographics & Theatrical Curtains (v10)
+- **Best for:** Executive overviews, milestone roadmaps, multi-pillar frameworks, modern educational showcases, event keynotes.
+- **Tokens:** Clean studio light/sage/pearl surfaces (`--bg #eef4f1`, `--surface #ffffff`, `--ink #182a24`, `--muted #51665e`, `--accent #ef6c57` glowing coral, `--accent2 #2c8c72` emerald-sage) paired with crisp multi-layered white/silver paper shadows (`drop-shadow(0 18px 28px rgba(0,0,0,0.14))`).
+- **Signature Visual Kit (5 Modular Slide Mechanics):**
+  1. **Paper-Cut S-Wave Curtains (Opening & Closing):** Multi-layered organic SVG S-curve white/silver curtains flanking the left/right edges with realistic cast shadows. They part smoothly (`expo.out`) on Slide 1 to unveil extruded 3D display typography, and sweep closed from the corners on the final step of the closing slide (re-opening on backward arrow).
+  2. **Glowing Infographic Tree:** Central stylized tree/branch network with luminous white & glowing coral nodes popping in elastically (`elastic.out`) in sync with numbered talking points.
+  3. **3D Perspective Winding Timeline Road:** A crisp white perspective-tapered road curving toward the horizon with staggered chronological milestone pins/cards popping up from foreground to horizon.
+  4. **6 Isometric Elevated Pillars:** Extruded white 3D/CSS isometric pedestals with angled top caps and soft grounded floor shadows on a calm sage/mint canvas, sliding up sequentially.
+  5. **Hybrid 3D Coordination:** Automatically hides `#gl` (`data-hero="hide"`) on pure paper-cut SVG slides so the layered paper shadows and extruded typography stay razor-sharp, while optionally pairing soft-shadowed white/coral matte 3D props on hero/split slides.
